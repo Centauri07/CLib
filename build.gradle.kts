@@ -1,5 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("maven-publish")
     kotlin("jvm") version "1.5.31"
     java
 }
@@ -13,6 +14,7 @@ repositories {
     maven {
         url = uri("https://m2.dv8tion.net/releases")
     }
+
 }
 
 dependencies {
@@ -27,6 +29,18 @@ dependencies {
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "me.centauri07.form"
+            artifactId = "Form"
+            version = "1.0"
+
+            from(components["java"])
+        }
+    }
 }
 
 tasks {
