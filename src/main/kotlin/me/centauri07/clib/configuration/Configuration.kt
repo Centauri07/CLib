@@ -5,22 +5,23 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 
-class Configuration<T>(model: T, parent: File?, name: String) {
+class Configuration<T>(var model: T, parent: File? = null, name: String) {
     companion object {
         private val configurations = mutableListOf<Configuration<*>>()
     }
 
     private val gson = GsonBuilder().serializeNulls().setPrettyPrinting().create()
-    val file = File(parent, "$name.json")
-    var model = model
+    val file = File(parent ?: File(this::class.java.protectionDomain.codeSource.location.path).parentFile, "$name.json")
 
     init {
         if (!file.parentFile.exists()) file.parentFile.mkdirs()
 
-        if (!file.exists())
+        if (!file.exists()) {
             file.createNewFile()
+            create()
+        }
 
-        create()
+        load()
 
         configurations.add(this)
     }
