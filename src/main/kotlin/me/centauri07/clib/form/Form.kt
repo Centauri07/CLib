@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.Button
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -207,12 +208,20 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             }
 
             is ButtonField -> {
+                val buttonChunked = field.buttonList.chunked(5)
+
+                val actionRows = mutableListOf<ActionRow>()
+
+                buttonChunked.forEach {
+                    actionRows.add(ActionRow.of(it))
+                }
+
                 MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
                     EmbedUtility.success(
                         null,
                         "${field.name} - Please select an option."
                     ).build()
-                ).setActionRow(field.buttonList).queue {
+                ).setActionRows(actionRows).queue {
                     field.messageId = it.idLong
                     this.message = it
                 }
@@ -263,12 +272,20 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             }
 
             is ButtonField -> {
+                val buttonChunked = field.buttonList.chunked(5)
+
+                val actionRows = mutableListOf<ActionRow>()
+
+                buttonChunked.forEach {
+                    actionRows.add(ActionRow.of(it))
+                }
+
                 MessageUtility.editOrSendEmbedMessage(message, formChannel,
                     EmbedUtility.success(
                         null,
                         "${field.name} - Please select an option."
                     ).build()
-                ).setActionRow(field.buttonList).queue {
+                ).setActionRows(actionRows).queue {
                     field.messageId = it.idLong
                     this.message = it
                 }
