@@ -21,7 +21,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val member: Member) {
-    private val groupFormField = GroupFormField("General", true)
+    val ungroupedFormFields = mutableListOf<FormField<*>>()
 
     var idle = false
 
@@ -33,6 +33,8 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
     var message: Message? = null
 
     init {
+        val groupFormField = GroupFormField("General", true)
+
         model::class.java.declaredFields.forEach {
             it.isAccessible = true
 
@@ -40,40 +42,33 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
 
             startTimer()
         }
-    }
 
-    fun getUnacknowledgedField(): FormField<*>? {
-        var field = groupFormField.fields?.stream()?.filter { !it.isAcknowledged }?.findFirst()?.orElse(null)
-
-        if (field != null) if (!field.required && !field.chosen) return field
-
-        while (field != null && field is GroupFormField) {
-            val childFields = field.fields?.filter { !it.isAcknowledged }?.toMutableList()
-
-            if (childFields == null || childFields.isEmpty()) {
-                field.isAcknowledged = true
-                field = groupFormField.fields?.stream()?.filter { !it.isAcknowledged }?.findFirst()?.orElse(null)
-            } else field = childFields[0]
-
-            if (field != null) if (!field.required && !field.chosen) return field
+        for (field in groupFormField.fields!!) {
+            addField(field)
         }
-
-        return field
     }
+
+    fun getUnacknowledgedField(): FormField<*>? =
+        ungroupedFormFields.stream().filter { !it.isAcknowledged }.findFirst().orElse(null)
+
 
     internal fun fireEvent(message: Message, button: Button? = null) {
         if (idle) return
 
-        if (message.isFromType(ChannelType.GROUP)) message.delete().queue()
-
         var field = getUnacknowledgedField() ?: run {
             FormManager.setAcknowledged(member.idLong)
 
-            MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
-                EmbedUtility.success(
-                    "Session Finished",
-                    "Please click ✅ to submit the form, and react with ❌ to cancel."
-                ).build()
+            val builder = EmbedUtility.success(
+                "Session Finished",
+                "Please click ✅ to submit the form, and react with ❌ to cancel."
+            )
+
+            for (field in ungroupedFormFields) {
+                if (field.isChosen) builder.addField(field.name, field.value.toString(), false)
+            }
+
+            MessageUtility.editOrSendEmbedMessage(
+                this.message, formChannel, builder.build()
             ).setActionRow(submitButton, cancelButton).queue {
                 this.message = it
             }
@@ -81,7 +76,7 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             return
         }
 
-        if (!field.required && !field.chosen) {
+        if (!field.required && !field.isChosen) {
             MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
                 EmbedUtility.success(null, "Do you want to enter ${field.name}?").build()
             ).setActionRow(field.yes, field.no).queue {
@@ -123,7 +118,6 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
                             }, 5, TimeUnit.SECONDS
                         )
                     }
-
                     return
                 }
             }
@@ -169,13 +163,17 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
         field = getUnacknowledgedField() ?: run {
             FormManager.setAcknowledged(member.idLong)
 
-            MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
-                EmbedUtility.success(
-                    "Session Finished",
-                    "Please click ✅ to submit the form, and react with ❌ to cancel."
-                ).also {
-                    // TODO add the answers as a field
-                }.build()
+            val builder = EmbedUtility.success(
+                "Session Finished",
+                "Please click ✅ to submit the form, and react with ❌ to cancel."
+            )
+
+            for (formField in ungroupedFormFields) {
+                if (formField.isChosen) builder.addField(formField.name, formField.value.toString(), false)
+            }
+
+            MessageUtility.editOrSendEmbedMessage(
+                this.message, formChannel, builder.build()
             ).setActionRow(submitButton, cancelButton).queue {
                 this.message = it
             }
@@ -183,7 +181,9 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             return
         }
 
-        if (!field.required && !field.chosen) {
+        if (message.isFromType(ChannelType.TEXT)) message.delete().queue()
+
+        if (!field.required && !field.isChosen) {
             MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
                 EmbedUtility.success(null, "Do you want to enter ${field.name}?").build()
             ).setActionRow(field.yes, field.no).queue {
@@ -233,13 +233,19 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
         if (idle) return
 
         val field = getUnacknowledgedField() ?: run {
+            val builder = EmbedUtility.success(
+                "Session Finished",
+                "Please click ✅ to submit the form, and react with ❌ to cancel."
+            )
+
+            for (field in ungroupedFormFields) {
+                if (field.isChosen) builder.addField(field.name, field.value.toString(), false)
+            }
+
             FormManager.setAcknowledged(member.idLong)
 
             MessageUtility.editOrSendEmbedMessage(message, formChannel,
-                EmbedUtility.success(
-                    "Session Finished",
-                    "Please click ✅ to submit the form, and react with ❌ to cancel."
-                ).build()
+                builder.build()
             ).setActionRow(submitButton, cancelButton).queue {
                 this.message = it
             }
@@ -247,7 +253,7 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             return
         }
 
-        if (!field.required && !field.chosen) {
+        if (!field.required && !field.isChosen) {
             MessageUtility.editOrSendEmbedMessage(message, formChannel,
                 EmbedUtility.success(null, "Do you want to enter ${field.name}?").build()
             ).setActionRow(field.yes, field.no).queue {
@@ -308,6 +314,16 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
     fun resetTimer() {
         stopTimer()
         startTimer()
+    }
+
+    private fun addField(field: FormField<*>) {
+        if (field !is GroupFormField) {
+            ungroupedFormFields.add(field)
+        } else {
+            field.fields?.forEach {
+                ungroupedFormFields.add(it)
+            }
+        }
     }
 }
 

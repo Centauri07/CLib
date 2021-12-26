@@ -3,7 +3,6 @@ package me.centauri07.clib.form.field
 import net.dv8tion.jda.api.interactions.components.Button
 
 class ButtonField(name: String, required: Boolean = false): FormField<ButtonChoice>(name, required) {
-    lateinit var chosenButton: ButtonChoice
     var messageId: Long = 0
 
     internal var buttonList = mutableListOf<Button>()
@@ -27,9 +26,11 @@ class ButtonField(name: String, required: Boolean = false): FormField<ButtonChoi
             return false
         }
 
-        chosenButton = buttonChoice
+        this.value = buttonChoice
         return true
     }
+
+    override var value: ButtonChoice? = null
 }
 
 data class ButtonChoice(val id: String, val name: String)

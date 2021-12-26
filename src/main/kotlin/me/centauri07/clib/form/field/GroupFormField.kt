@@ -5,7 +5,6 @@ open class GroupFormField(name: String, required: Boolean = false): FormField<Gr
 
     fun add(vararg fields: FormField<*>): GroupFormField {
         this.fields?.addAll(fields) ?: run { this.fields = mutableListOf(*fields) }
-        println(fields.size)
         return this
     }
 
@@ -13,4 +12,10 @@ open class GroupFormField(name: String, required: Boolean = false): FormField<Gr
         this.fields?.add(field) ?: run { this.fields = mutableListOf(field) }
         return field
     }
+
+    fun remove(name: String) {
+        fields?.removeIf { it.name == name }
+    }
+
+    override var value: GroupFormField? = this
 }

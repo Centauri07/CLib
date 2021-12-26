@@ -4,9 +4,6 @@ import me.centauri07.clib.form.field.input.InputReaderRegistry
 import java.lang.IllegalArgumentException
 
 open class InputField<T>(clazz: Class<T>, name: String, required: Boolean = false): FormField<T>(name, required) {
-    var value: T? = null
-        private set
-
     private val reader = InputReaderRegistry.get(clazz)
 
     init {
@@ -18,4 +15,6 @@ open class InputField<T>(clazz: Class<T>, name: String, required: Boolean = fals
             if (it.isSuccess) value = it.getOrNull()
         }
     }
+
+    override var value: T? = null
 }

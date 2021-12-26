@@ -7,14 +7,11 @@ abstract class InputReader<T>(val clazz: Class<T>) {
 
     fun read(input: String, condition: ((T) -> Boolean)? = null, message: String?): Result<T> {
         return try {
-            val result = converter(input) ?: run {
-                return Result.failure(IllegalArgumentException("The input that you've entered doesn't follow the required format."))
-            }
+            val result = converter(input) ?: return Result.failure(IllegalArgumentException("The input that you've entered doesn't follow the required format."))
 
-            condition?.let { if (!condition(result))
-                return Result.failure(IllegalStateException(message)) }
+            condition?.let { if (!condition(result)) return Result.failure(IllegalStateException(message)) }
 
-            return Result.success(result)
+            Result.success(result)
         } catch (throwable: Throwable) {
             Result.failure(Throwable("The input that you've entered doesn't follow the required format.", throwable))
         }
@@ -22,7 +19,6 @@ abstract class InputReader<T>(val clazz: Class<T>) {
 }
 
 object InputReaderRegistry {
-
     private val readers = mutableMapOf<Class<*>, InputReader<*>>()
 
     init {

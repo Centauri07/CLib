@@ -3,10 +3,16 @@ package me.centauri07.clib.form.field
 import net.dv8tion.jda.api.interactions.components.Button
 
 abstract class FormField<T> (var name: String, var required: Boolean = false) {
-    var condition: ((T) -> Boolean)? = null
-    var failConditionMessage: String? = null
+    abstract var value: T?
 
-    internal var chosen = required
+    var condition: ((T) -> Boolean)? = null
+        private set
+    var acknowledgeAction: ((T) -> Unit)? = null
+        private set
+    var failConditionMessage: String? = null
+        private set
+
+    internal var isChosen = required
     internal var isAcknowledged = false
 
     internal var yes: Button? = null
@@ -24,5 +30,9 @@ abstract class FormField<T> (var name: String, var required: Boolean = false) {
     fun continueIf(condition: (T) -> Boolean, message: String) {
         this.condition = condition
         this.failConditionMessage = message
+    }
+
+    fun onAcknowledge(action: (T) -> Unit) {
+        acknowledgeAction = action
     }
 }

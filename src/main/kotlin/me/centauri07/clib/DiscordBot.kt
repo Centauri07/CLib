@@ -8,13 +8,18 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.requests.GatewayIntent
 import java.io.File
 
-abstract class DiscordBot(botName: String, token: String, vararg gatewayIntents: GatewayIntent) {
-    abstract fun enable()
-    abstract fun disable()
+abstract class DiscordBot(
+    botName: String,
+    token: String,
+    vararg gatewayIntents: GatewayIntent,
+    parentFile: File? = null
+): ListenerAdapter() {
+    open fun enable() {}
+    open fun disable() {}
 
     val jda: JDA = JDABuilder.createDefault(token, gatewayIntents.toList()).build().awaitReady()
 
-    val dataFolder: File = File(File(this::class.java.protectionDomain.codeSource.location.path).parentFile, jda.selfUser.name)
+    val dataFolder: File = parentFile?.let { File(it, botName) } ?: File(File(this::class.java.protectionDomain.codeSource.location.path).parentFile, jda.selfUser.name)
 
     init {
         FormManager.register(jda)
@@ -26,5 +31,6 @@ abstract class DiscordBot(botName: String, token: String, vararg gatewayIntents:
     fun addEventListener(listener: ListenerAdapter) = jda.addEventListener(listener)
     fun addEventListeners(vararg listeners: ListenerAdapter) = jda.addEventListener(listeners)
 
-    fun <T> createConfiguration(model: T, parent: File?, name: String) = Configuration(model, parent, name)
+    fun <T> createConfiguration(model: T, parent: File?, name: String) = Configuration(model, name, parent)
+    fun <T> getConfiguration(name: String) = Configuration.get<T>(name)
 }

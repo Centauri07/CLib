@@ -13,11 +13,11 @@ class OptionalFieldListener: ListenerAdapter() {
         val formField: FormField<*> = form.getUnacknowledgedField() ?: return
 
         if (form.idle) {
-            if (!formField.required && !formField.chosen) {
+            if (!formField.required && !formField.isChosen) {
                 if (event.button == formField.yes) {
                     event.deferEdit().setActionRows(ButtonUtility.disableButton(event.message!!)).queue()
                     form.resetTimer()
-                    formField.chosen = true
+                    formField.isChosen = true
                     form.idle = false
                     form.startSession()
                 } else if (event.button == formField.no) {

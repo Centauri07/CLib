@@ -5,9 +5,14 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 
-class Configuration<T>(var model: T, parent: File? = null, name: String) {
+class Configuration<T>(var model: T, val name: String, parent: File? = null) {
     companion object {
         private val configurations = mutableListOf<Configuration<*>>()
+
+        fun <T> get(name: String): Configuration<T>? =
+            configurations.stream().filter { it.name == name }.findFirst().orElse(null)?.let { return it as Configuration<T> }
+
+        fun <T> has(name: String): Boolean = get<T>(name) != null
     }
 
     private val gson = GsonBuilder().serializeNulls().setPrettyPrinting().create()
@@ -22,6 +27,8 @@ class Configuration<T>(var model: T, parent: File? = null, name: String) {
         }
 
         load()
+
+        if (has<T>(name)) throw IllegalArgumentException("Configuration already exists: Configuration with name $name already exists")
 
         configurations.add(this)
     }
