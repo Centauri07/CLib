@@ -33,19 +33,11 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
     var message: Message? = null
 
     init {
-        val groupFormField = GroupFormField("General", true)
-
-        model::class.java.declaredFields.forEach {
-            it.isAccessible = true
-
-            if (FormField::class.java.isAssignableFrom(it.type)) groupFormField.add(it.get(model) as FormField<*>)
-
-            startTimer()
-        }
-
-        for (field in groupFormField.fields!!) {
+        for (field in model.fields!!) {
             addField(field)
         }
+
+        startTimer()
     }
 
     fun getUnacknowledgedField(): FormField<*>? =
