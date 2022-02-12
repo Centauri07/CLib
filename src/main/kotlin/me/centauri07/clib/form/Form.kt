@@ -295,7 +295,7 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
         timer = Executors.newSingleThreadScheduledExecutor().schedule(
             {
                 model.onSessionExpire(this)
-            }, 3, TimeUnit.SECONDS
+            }, 3, TimeUnit.MINUTES
         )
     }
 
