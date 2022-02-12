@@ -25,7 +25,7 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
 
     var idle = false
 
-    private lateinit var timer: ScheduledFuture<*>
+    private var timer: ScheduledFuture<*>? = null
 
     val submitButton = Button.success("session-submit", "✅ Submit")
     val cancelButton = Button.danger("session-cancel", "❌ Cancel")
@@ -46,6 +46,8 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
 
     internal fun fireEvent(message: Message, button: Button? = null) {
         if (idle) return
+
+        if (message.isFromType(ChannelType.TEXT)) message.delete().queue()
 
         var field = getUnacknowledgedField() ?: run {
             FormManager.setAcknowledged(member.idLong)
@@ -173,8 +175,6 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
             return
         }
 
-        if (message.isFromType(ChannelType.TEXT)) message.delete().queue()
-
         if (!field.required && !field.isChosen) {
             MessageUtility.editOrSendEmbedMessage(this.message, formChannel,
                 EmbedUtility.success(null, "Do you want to enter ${field.name}?").build()
@@ -292,6 +292,8 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
     }
 
     fun startTimer() {
+        timer?.cancel(true)
+
         timer = Executors.newSingleThreadScheduledExecutor().schedule(
             {
                 model.onSessionExpire(this)
@@ -300,7 +302,7 @@ class Form<T: FormModel>(val model: T, val formChannel: MessageChannel, val memb
     }
 
     fun stopTimer() {
-        timer.cancel(true)
+        timer?.cancel(true)
     }
 
     fun resetTimer() {
